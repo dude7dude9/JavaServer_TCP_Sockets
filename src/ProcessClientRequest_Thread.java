@@ -1,11 +1,15 @@
 import java.awt.image.BufferedImage;
-import java.io.DataInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.DatagramPacket;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -16,6 +20,7 @@ public class ProcessClientRequest_Thread implements Runnable {
 
 	private Socket clientConnection;
 	private ClassRoomServer CRS;
+	private String ClientID;
 
 	ProcessClientRequest_Thread(ServerSocket socket, ClassRoomServer crs){
 		try {
@@ -28,38 +33,40 @@ public class ProcessClientRequest_Thread implements Runnable {
 
 	@Override
 	public void run() {
-		InputStream is;
-		while(true){
-			try {
-				is = clientConnection.getInputStream();
-				DataInputStream DIS = new DataInputStream(is);
-				String header = DIS.readLine();
+		try {
+			int buffFilled, fileSize;
+			
+			OutputStream outImage;
+			BufferedImage screenShot;
+			String remoteCommand;
+			DataOutputStream dataOut;
+			
+			while(true){
+				InputStream is = clientConnection.getInputStream();
+				BufferedReader buffRead = new BufferedReader(new InputStreamReader(is));
+				
+				String header = buffRead.readLine();
 				try{
 					int imageSize = Integer.parseInt(header);
-
-					System.out.println("Before Readline");
-					System.out.println("INPUT STREAM " + String.valueOf(is.available()));
 					System.out.println("GET IMAGE");
-
-
-					int buffFilled=0;
-					int fileSize=0;
-					byte[] data = new byte[2048];
-					OutputStream outImage = new FileOutputStream(new File("./tempGrabbedScreen.jpg"));
-					//			while ((nRead = is.read(data)) != -1) {
+					
+					buffFilled=0;
+					fileSize=0;
+//					is.skip(header.length()+1);
+					outImage = new FileOutputStream(new File("./tempGrabbedScreen.jpg"));
 					while (fileSize < imageSize){
+						byte[] data = new byte[imageSize-fileSize];
 						buffFilled = is.read(data);
-						//					if (nRead == -1){break;}
+//						for(int i=0; i < buffFilled; i++){
+//							System.out.println("Position "+ Integer.toString(i) + " --> "+ Byte.toString(data[i]));
+//						}
 						fileSize += buffFilled;
 						outImage.write(data, 0, buffFilled);
 					}
 					outImage.flush();
 
-
 					//If image retrieved is not null then repaint GUI image
-					BufferedImage screenShot = ImageIO.read(new File("./tempGrabbedScreen.jpg"));
-					//				int size = screenShot.getHeight()*screenShot.getWidth();
-					//				System.out.println("SIZE = " + Integer.toString(size));
+					screenShot = ImageIO.read(new File("./tempGrabbedScreen.jpg"));
 					if(screenShot==null){
 						System.out.println("NO SOURCE IMAGE");
 					}else{
@@ -68,19 +75,37 @@ public class ProcessClientRequest_Thread implements Runnable {
 				}catch(NumberFormatException nfe){
 					//Incoming message did not contain a header with the file size
 					//Therefore ignore message
+					if(header!=null){
+						this.ClientID = header;
+					}
 				}
+				
+				BufferedOutputStream buffOut = new BufferedOutputStream( clientConnection.getOutputStream(), 100 );
+				
+				remoteCommand = CRS.getRemoteCommand();
+				// Sends the packet socket.send(packet); 
 
-//				clientConnection.close( );	
-			} catch (IOException e) {
-				e.printStackTrace();
-			}finally{
+				if(remoteCommand != null ){
+					System.out.println("Interrupt Remote");
+					String str = remoteCommand + "\n";
+					System.out.println(str); 
+					buffOut.write(str.getBytes());
+					CRS.setRemoteCommand(null);
+				}else{
+					buffOut.write("NoAction\n".getBytes());
+				}
+				buffOut.flush();
+
+			}/*End of Loop*/
+		} catch (IOException e) {
+			e.printStackTrace();
+		}finally{
 			//			notifyAll();
-//				try {
-////					clientConnection.close( );
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//				}
-			}
-		}	
-	}
+			//				try {
+			////					clientConnection.close( );
+			//				} catch (IOException e) {
+			//					e.printStackTrace();
+			//				}
+		}
+	}	
 }

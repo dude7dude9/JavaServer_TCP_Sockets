@@ -115,10 +115,10 @@ public class ClassRoomServer extends JFrame implements ActionListener {
 //					Socket clientConnection2 = socket2.accept();
 //					System.out.println("After Accept");
 					//Create new thread for connection2
-					ProcessServerInterrupt_Thread client2 = new ProcessServerInterrupt_Thread(mSocket, RemoteCommand, CRS, groupAddr, 10011);
-					Thread multicastThread = new Thread(client2);
-					multicastThread.setDaemon(true);
-					multicastThread.start();
+//					ProcessServerInterrupt_Thread client2 = new ProcessServerInterrupt_Thread(mSocket, RemoteCommand, CRS, groupAddr, 10011);
+//					Thread multicastThread = new Thread(client2);
+//					multicastThread.setDaemon(true);
+//					multicastThread.start();
 //					client2.run();
 					
 					/* Repeatedly handle requests for processing. */ 
@@ -126,7 +126,7 @@ public class ClassRoomServer extends JFrame implements ActionListener {
 
 						System.out.println("Before Accept");
 //						Socket clientConnection = socket.accept();
-						System.out.println("After Accept");
+//						System.out.println("After Accept");
 						//Create new thread for connection1
 //						ProcessClientRequest_Thread client1 = new ProcessClientRequest_Thread(clientConnection, CRS);
 						ProcessClientRequest_Thread client1 = new ProcessClientRequest_Thread(socket, CRS);
