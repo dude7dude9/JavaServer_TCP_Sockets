@@ -28,7 +28,10 @@ import threadedServer.Consumer;
 import threadedServer.IndexedSocket;
 import threadedServer.Producer;
 
-
+//TODO check bug with adding and removing clients of more than one, 2 ID's were same
+//TODO look into how to screen capture more than one application
+//TODO Allow client/server setting of user name, port, IP
+//TODO Make more attractive, add default GUI size and Scroll bars
 @SuppressWarnings("serial")
 public class ClassRoomServer extends JFrame implements ActionListener {
 	
@@ -44,7 +47,9 @@ public class ClassRoomServer extends JFrame implements ActionListener {
 	private JButton LockAll;
 	private static int clientID;
 	
+	//TODO change to threadsafe queue's
 //GUI Objects for each client	
+	public Vector<Container>		containers				= new Vector<Container>(16);
 	public Vector<Consumer>			consumers	 			= new Vector<Consumer>(16);
 	public Vector<BufferedImage> 	screenShots 			= new Vector<BufferedImage>(16);
 	public Vector<JLabel> 			screenLabels 			= new Vector<JLabel>(16);
@@ -95,6 +100,16 @@ public class ClassRoomServer extends JFrame implements ActionListener {
 	 */
 	public synchronized int addScreen(String imageLoad){
 		try {
+//			int index = 0;
+//			if(!clientIDs.isEmpty()){
+//				for(int takenId : clientIDs){
+//					if(takenId != index){
+//						break;
+//					}
+//					index++;
+//				}
+//			}
+//			
 			Container perUserContent = new Container();
 			perUserContent.setLayout(new GridBagLayout());
 			GridBagConstraints gbc = new GridBagConstraints();
@@ -104,25 +119,32 @@ public class ClassRoomServer extends JFrame implements ActionListener {
 			//Add the screen for a client device
 			BufferedImage screenShot = ImageIO.read(new File(imageLoad));
 			screenShots.add(screenShot);
-			int index = screenShots.indexOf(screenShot);
+//			screenShots.insertElementAt(screenShot, index);
+//			int index = screenShots.indexOf(screenShot);
 			JLabel screenLabel = new JLabel(new ImageIcon( screenShot ));
 			screenLabels.add(screenLabel);
+//			screenLabels.insertElementAt(screenLabel, index);
 			perUserContent.add( screenLabel, gbc );   
 			
 			gbc.gridy = 1;
 			//Add the lock button for a client device
-			JButton clientLock = new JButton("Lock Device " + index);
+			JButton clientLock = new JButton("Lock Device " + clientID);
 			Dimension buttonSize = new Dimension(100, 1);
 			clientLock.setMaximumSize(buttonSize);
 			clientLock.addActionListener(CRS);
 			perUserContent.add(clientLock, gbc);
 			clientLocks.add(clientLock);
+//			clientLocks.insertElementAt(clientLock, index);
+			containers.add(perUserContent);
+//			containers.insertElementAt(perUserContent, index);
 			
 			remoteClientCommands.add("NOACTION");
 			clientIDs.add(clientID);
+//			clientIDs.insertElementAt(clientID, index);
 			clientID++;
-			
-			content.add(perUserContent);
+
+			content.add(containers.lastElement());
+//			content.add(containers.elementAt(index), index);
 			content.validate();
 			content.repaint();
 			return (clientID-1);
@@ -132,11 +154,20 @@ public class ClassRoomServer extends JFrame implements ActionListener {
 		} 
 	}
 	
-	public void removeScreen(int index){
+	public synchronized void removeScreen(int i){
+		int index = clientIDs.indexOf(i);
+		Container cont =  containers.elementAt(index);
+//		containers.remove(button);
+//		content.remove(button);
+		content.remove(cont);
+		
 		screenShots.remove(index);
 		screenLabels.remove(index);
 		clientLocks.remove(index);
 		remoteClientCommands.remove(index);
+		clientIDs.remove(index);
+		containers.remove(index);
+		
 		content.validate();
 		content.repaint();
 	}
@@ -229,11 +260,11 @@ public class ClassRoomServer extends JFrame implements ActionListener {
 		System.out.println(screenShots.capacity());
 		//Lock Selected Client
 		for(int i=0; i < screenShots.size(); i++){
-			if( e.getActionCommand().equals("Lock Device " + i) ){
+			if( e.getActionCommand().equals("Lock Device " + clientIDs.elementAt(i)) ){
 				System.out.println("Lock Device " + i);
 				
 				remoteClientCommands.set(i, "LOCK");
-				clientLocks.elementAt(i).setText("Unlock Device " + i);
+				clientLocks.elementAt(i).setText("Unlock Device " + clientIDs.elementAt(i));
 //				int x =0;
 //				for(JButton jBut : clientLocks){
 //					x++;
@@ -247,10 +278,10 @@ public class ClassRoomServer extends JFrame implements ActionListener {
 		}
 		//Unlock Selected Client
 		for(int i=0; i < screenShots.size(); i++){
-			if( e.getActionCommand().equals("Unlock Device " + i) ){
+			if( e.getActionCommand().equals("Unlock Device " + clientIDs.elementAt(i)) ){
 				System.out.println("Unlock Device " + i);
 				remoteClientCommands.set(i, "UNLOCK");
-				clientLocks.elementAt(i).setText("Lock Device " + i);
+				clientLocks.elementAt(i).setText("Lock Device " + clientIDs.elementAt(i));
 			}
 		}
 		System.out.println("");

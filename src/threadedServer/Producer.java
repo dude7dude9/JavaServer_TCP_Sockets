@@ -1,5 +1,7 @@
 package threadedServer;
 
+import gui.ClassRoomServer;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -7,10 +9,12 @@ import java.net.Socket;
 
 public class Producer implements Runnable {
 	
-	private Buffer<Socket> fBuffer;
+	private Buffer<IndexedSocket> fBuffer;
+	private ClassRoomServer CRS;
 	
-	public Producer(Buffer<Socket> buffer) {
+	public Producer(Buffer<IndexedSocket> buffer, ClassRoomServer crs) {
 		fBuffer = buffer;
+		CRS = crs;
 	}
 	
 	public void run() {
@@ -21,9 +25,9 @@ public class Producer implements Runnable {
 			
 			while(true){
 				Socket clientConnection = socket.accept();
-				
 				try {
-					fBuffer.put(clientConnection);
+					IndexedSocket socketIndexStruct = new IndexedSocket(clientConnection, CRS.addScreen("./hide_Sit.bmp"));
+					fBuffer.put(socketIndexStruct);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}		

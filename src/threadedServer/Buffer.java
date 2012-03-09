@@ -5,4 +5,7 @@ public interface Buffer<T> {
 	public T get() throws InterruptedException;
 	public boolean isFull() throws InterruptedException;
 	public boolean isEmpty() throws InterruptedException;
+//	void put(T element, int index) throws InterruptedException;
+//	T get(String index) throws InterruptedException;
+//	T get(Indexer index) throws InterruptedException;
 }
